@@ -58,8 +58,10 @@ func parseBase64(a string) []byte {
 
 func signin(c echo.Context) error {
 	userC := new(struct {
-		Username string `form:"username" json:"username"`
-		Password string `form:"password" json:"password"`
+		Username          string `form:"username" json:"username"`
+		Password          string `form:"password" json:"password"`
+		RecaptchaResponse string `form:"g-recaptcha-response" json:"g-recaptcha-response"`
+		HCaptchaResponse  string `form:"h-captcha-response" json:"h-captcha-response"`
 	})
 	err := c.Bind(userC)
 	if err != nil {

@@ -16,3 +16,5 @@
 .env
 .vscode
 users.db
+verify.go
+.auth.admin.token

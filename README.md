@@ -8,6 +8,18 @@ External authentication server made in Go to use Nginx's http_auth_request_modul
 
 (If not set, it will be generated automatically)
 
+`TINY_AUTH_SERVICE_DATABASE_TYPE`: Specify the type of DB server storing user information. (Default: `sqlite3`)
+
+`TINY_AUTH_SERVICE_CAPTCHA_ENABLE`: `true` or `false` (Default: `false`)
+
+`TINY_AUTH_SERVICE_CAPTCHA_SITEKEY`: site key for recaptcha or hcaptcha
+
+`TINY_AUTH_SERVICE_CAPTCHA_SECRETKEY`: site key for recaptcha or hcaptcha
+
+`TINY_AUTH_SERVICE_CAPTCHA_VERIFY_URL`: (ex: `https://hcaptcha.com/siteverify` or `https://www.google.com/recaptcha/api/siteverify` or `https://www.recaptcha.net/recaptcha/api/siteverify`)
+
+`TINY_AUTH_SERVICE_CAPTCHA_TYPE`: (`recaptcha` or `hcaptcha`)
+
 # TODO 
 
 - [x] signin

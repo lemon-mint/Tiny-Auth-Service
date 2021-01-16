@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -20,6 +21,11 @@ type user struct {
 var db *gorm.DB
 
 func dbConnect() {
-	db, _ = gorm.Open(sqlite.Open("users.db"), &gorm.Config{})
+	var driver gorm.Dialector
+	DBtype := get(os.Getenv("TINY_AUTH_SERVICE_DATABASE_TYPE"), "sqlite3")
+	if DBtype == "sqlite3" {
+		driver = sqlite.Open("users.db")
+	}
+	db, _ = gorm.Open(driver, &gorm.Config{})
 	db.AutoMigrate(&user{})
 }
