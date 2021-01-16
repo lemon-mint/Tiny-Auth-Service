@@ -15,7 +15,7 @@ func newUser(username string, password string, acls []string) *user {
 	salt := make([]byte, 32)
 	io.ReadFull(rand.Reader, salt)
 	xpass := sha512.Sum512([]byte(password + username))
-	hash := argon2.IDKey(xpass[:], salt, 1, 512, 4, 32)
+	hash := argon2.IDKey(xpass[:], salt, 2, 1024, 4, 32)
 	return &user{
 		Username:   username,
 		PassHash:   base64.RawURLEncoding.EncodeToString(hash),

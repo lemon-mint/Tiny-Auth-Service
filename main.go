@@ -108,7 +108,7 @@ func signin(c echo.Context) error {
 		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 	}
 	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
-	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 1, 512, 4, 32)
+	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 2, 1024, 4, 32)
 	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
 		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 	}
