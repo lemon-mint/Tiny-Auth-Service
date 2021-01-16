@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/base64"
+	"html/template"
 	"io"
 	"net/http"
 	"os"
@@ -36,13 +37,36 @@ func get(a string, backup string) string {
 	return backup
 }
 
+//Template wrapper
+type Template struct {
+	templates *template.Template
+}
+
+//Render template
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	t := &Template{
+		templates: template.Must(template.ParseGlob("views/*.html")),
+	}
+	e.Renderer = t
 	dbConnect()
 	//db.Create(newUser("admin", "qwerty001", []string{"user"}))
-	e.File("/authserver/signin", "views/signin.html")
+	e.GET("/authserver/signin", func(c echo.Context) error {
+		return c.Render(
+			http.StatusOK,
+			"signin.html",
+			map[string]interface{}{
+				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
+				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
+			},
+		)
+	})
 	e.GET("/authserver/verify", verifySession)
 	e.POST("/authserver/auth.go", signin)
 	e.Logger.Fatal(e.Start(":18080"))
@@ -67,16 +91,6 @@ func signin(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
-	u := new(user)
-	t := db.First(u, "username = ?", userC.Username)
-	if t.Error != nil {
-		return c.String(http.StatusForbidden, "Username or password do not match.")
-	}
-	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
-	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 1, 512, 4, 32)
-	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
-		return c.String(http.StatusForbidden, "Username or password do not match.")
-	}
 	if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_ENABLE") == "true" {
 		if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE") == "recaptcha" {
 			if !verifyCaptcha(userC.RecaptchaResponse) {
@@ -87,6 +101,16 @@ func signin(c echo.Context) error {
 				return c.String(http.StatusForbidden, "hCaptcha Error")
 			}
 		}
+	}
+	u := new(user)
+	t := db.First(u, "username = ?", userC.Username)
+	if t.Error != nil {
+		return c.String(http.StatusForbidden, "Username or password do not match.")
+	}
+	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
+	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 1, 512, 4, 32)
+	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
+		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
 	db.Model(u).Update("LastSignin", time.Now())
 	c.SetCookie(&http.Cookie{
