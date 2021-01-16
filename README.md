@@ -2,7 +2,7 @@
 Multipurpose external authentication server made with Go
 
 
-# Environment variable config
+## Environment variable config
 
 `TINY_AUTH_SERVICE_SECRET_KEY`: Secret key used to encrypt and sign cookies
 
@@ -16,7 +16,8 @@ Multipurpose external authentication server made with Go
 
 `TINY_AUTH_SERVICE_CAPTCHA_SECRETKEY`: site key for recaptcha or hcaptcha
 
-`TINY_AUTH_SERVICE_CAPTCHA_VERIFY_URL`: (ex: `https://hcaptcha.com/siteverify` or `https://www.google.com/recaptcha/api/siteverify` or `https://www.recaptcha.net/recaptcha/api/siteverify`)
+`TINY_AUTH_SERVICE_CAPTCHA_VERIFY_URL`: 
+(ex: `https://hcaptcha.com/siteverify` or `https://www.google.com/recaptcha/api/siteverify` or `https://www.recaptcha.net/recaptcha/api/siteverify`)
 
 `TINY_AUTH_SERVICE_CAPTCHA_TYPE`: (`recaptcha` or `hcaptcha`)
 
