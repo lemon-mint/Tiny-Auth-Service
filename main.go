@@ -77,6 +77,17 @@ func signin(c echo.Context) error {
 	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
 		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
+	if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_ENABLE") == "true" {
+		if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE") == "recaptcha" {
+			if !verifyCaptcha(userC.RecaptchaResponse) {
+				return c.String(http.StatusForbidden, "Recaptcha Error")
+			}
+		} else if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE") == "hcaptcha" {
+			if !verifyCaptcha(userC.HCaptchaResponse) {
+				return c.String(http.StatusForbidden, "hCaptcha Error")
+			}
+		}
+	}
 	db.Model(u).Update("LastSignin", time.Now())
 	c.SetCookie(&http.Cookie{
 		Name: "_GOAUTHSSID",
