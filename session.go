@@ -10,7 +10,7 @@ import (
 type session struct {
 	SessionID string   `json:"sessionid"`
 	TimeStamp string   `json:"ts"`
-	ACL       []string `json:"acl"`
+	ACLS      []string `json:"acls"`
 }
 
 func getCRand() string {
