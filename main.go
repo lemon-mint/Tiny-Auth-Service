@@ -41,6 +41,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	dbConnect()
+	//db.Create(newUser("admin", "qwerty001", []string{"user"}))
 	e.File("/authserver/signin", "views/signin.html")
 	e.GET("/authserver/verify", verifySession)
 	e.POST("/authserver/auth.go", signin)
@@ -62,17 +63,17 @@ func signin(c echo.Context) error {
 	})
 	err := c.Bind(userC)
 	if err != nil {
-		return c.Redirect(http.StatusTemporaryRedirect, "/authserver/signin")
+		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
 	u := new(user)
-	t := db.First(u, userC.Username)
+	t := db.First(u, "username = ?", userC.Username)
 	if t.Error != nil {
-		return c.Redirect(http.StatusTemporaryRedirect, "/authserver/signin")
+		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
-	xpass := sha512.Sum512([]byte(userC.Password))
+	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
 	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 1, 512, 4, 32)
 	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
-		return c.Redirect(http.StatusTemporaryRedirect, "/authserver/signin")
+		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
 	db.Model(u).Update("LastSignin", time.Now())
 	c.SetCookie(&http.Cookie{
@@ -85,7 +86,7 @@ func signin(c echo.Context) error {
 		HttpOnly: true,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
-	return c.Redirect(http.StatusTemporaryRedirect, "/authserver/verify")
+	return c.String(http.StatusOK, "OK")
 }
 
 func verifySession(c echo.Context) error {
