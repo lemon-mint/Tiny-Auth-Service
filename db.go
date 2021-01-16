@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -25,6 +26,8 @@ func dbConnect() {
 	DBtype := get(os.Getenv("TINY_AUTH_SERVICE_DATABASE_TYPE"), "sqlite3")
 	if DBtype == "sqlite3" {
 		driver = sqlite.Open("users.db")
+	} else if DBtype == "mysql" || DBtype == "mariadb" {
+		driver = mysql.Open(os.Getenv("TINY_AUTH_SERVICE_DATABASE_DSN"))
 	}
 	db, _ = gorm.Open(driver, &gorm.Config{})
 	db.AutoMigrate(&user{})
