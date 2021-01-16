@@ -105,12 +105,12 @@ func signin(c echo.Context) error {
 	u := new(user)
 	t := db.First(u, "username = ?", userC.Username)
 	if t.Error != nil {
-		return c.String(http.StatusForbidden, "Username or password do not match.")
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 	}
 	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
 	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 1, 512, 4, 32)
 	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
-		return c.String(http.StatusForbidden, "Username or password do not match.")
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 	}
 	db.Model(u).Update("LastSignin", time.Now())
 	c.SetCookie(&http.Cookie{
@@ -123,7 +123,7 @@ func signin(c echo.Context) error {
 		HttpOnly: true,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
-	return c.String(http.StatusOK, "OK")
+	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
 }
 
 func verifySession(c echo.Context) error {
