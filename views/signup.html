@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <title>signup</title>
+    {{if eq .captchaType "recaptcha"}}
+    <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
+    {{else if eq .captchaType "hcaptcha"}}
+    <script src="https://hcaptcha.com/1/api.js?onload=onloadCallback&render=explicit" async defer></script>
+    {{end}}
+</head>
+
+<body class="w3-teal">
+    <script>
+        function onsignup(t) {
+            document.getElementById('signup').submit();
+        }
+    </script>
+    {{if eq .captchaType "recaptcha"}}
+    <script>
+        var onloadCallback = function () {
+            grecaptcha.render('captchabox', {
+                'sitekey': '{{.sitekey}}',
+                'callback': onsignup
+            });
+        };
+    </script>
+    {{else if eq .captchaType "hcaptcha"}}
+    <script>
+        var onloadCallback = function () {
+            hcaptcha.render('captchabox', {
+                'sitekey': '{{.sitekey}}',
+                'callback': onsignup
+            });
+        };
+    </script>
+    {{end}}
+    <div class="w3-container w3-teal">
+        <h1>signup</h1>
+    </div>
+    <div class="w3-padding-24 w3-margin-top w3-round-medium">
+        <div class="w3-container w3-card w3-display-middle w3-padding-48 w3-blue-grey w3-round-medium w3-margin-bottom">
+            <form action="/authserver/signup.go" method="POST" id="signup">
+                <input class="w3-input w3-round-medium w3-margin-bottom w3-margin-top" type="text"
+                    autocomplete="username" placeholder="username" id="username" name="username">
+                <input class="w3-input w3-round-medium w3-margin-top w3-margin-bottom" type="password"
+                    autocomplete="new-password" placeholder="password" id="password" name="password">
+                <input class="w3-input w3-round-medium w3-margin-bottom w3-margin-top" type="text"
+                    placeholder="acls" id="acls" name="acls">
+                {{if eq .captchaType "recaptcha"}}
+                <div id="captchabox"></div>
+                {{else if eq .captchaType "hcaptcha"}}
+                <div id="captchabox"></div>
+                {{else}}
+                <input type="submit" class="w3-margin-top w3-button w3-black w3-center w3-round-medium"
+                    onclick="onsignup();">
+                {{end}}
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -67,8 +67,19 @@ func main() {
 			},
 		)
 	})
+	e.GET("/authserver/signup", func(c echo.Context) error {
+		return c.Render(
+			http.StatusOK,
+			"signup.html",
+			map[string]interface{}{
+				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
+				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
+			},
+		)
+	})
 	e.GET("/authserver/verify", verifySession)
 	e.POST("/authserver/auth.go", signin)
+	e.POST("/authserver/signup.go", signup)
 	e.Logger.Fatal(e.Start(":18080"))
 }
 
@@ -92,11 +103,12 @@ func signin(c echo.Context) error {
 		return c.String(http.StatusForbidden, "Username or password do not match.")
 	}
 	if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_ENABLE") == "true" {
-		if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE") == "recaptcha" {
+		CaptchaType := os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE")
+		if CaptchaType == "recaptcha" {
 			if !verifyCaptcha(userC.RecaptchaResponse) {
 				return c.String(http.StatusForbidden, "Recaptcha Error")
 			}
-		} else if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE") == "hcaptcha" {
+		} else if CaptchaType == "hcaptcha" {
 			if !verifyCaptcha(userC.HCaptchaResponse) {
 				return c.String(http.StatusForbidden, "hCaptcha Error")
 			}
@@ -124,6 +136,77 @@ func signin(c echo.Context) error {
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
+}
+
+func signup(c echo.Context) error {
+	type response struct {
+		Success bool   `json:"success"`
+		Msg     string `json:"msg"`
+	}
+	m, err := c.Cookie("_GOAUTHSSID")
+	if err != nil {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "Unauthenticated User",
+		})
+	}
+	d, err := signer.DecryptAndVerify(m.Value)
+	if err != nil {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "Expired Session",
+		})
+	}
+	s, err := decodeSession(d)
+	if err != nil {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "Expired Session",
+		})
+	}
+	IsAdmin := false
+	for i := range s.ACLS {
+		if s.ACLS[i] == "admin" {
+			IsAdmin = true
+			break
+		}
+	}
+	if !IsAdmin {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "You do not have permission. Access denied",
+		})
+	}
+	userC := new(struct {
+		Username          string `form:"username" json:"username"`
+		Password          string `form:"password" json:"password"`
+		Acls              string `form:"acls" json:"acls"`
+		RecaptchaResponse string `form:"g-recaptcha-response" json:"g-recaptcha-response"`
+		HCaptchaResponse  string `form:"h-captcha-response" json:"h-captcha-response"`
+	})
+	err = c.Bind(userC)
+	if err != nil {
+		return c.String(http.StatusForbidden, "Username or password do not match.")
+	}
+	if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_ENABLE") == "true" {
+		CaptchaType := os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE")
+		if CaptchaType == "recaptcha" {
+			if !verifyCaptcha(userC.RecaptchaResponse) {
+				return c.String(http.StatusForbidden, "Recaptcha Error")
+			}
+		} else if CaptchaType == "hcaptcha" {
+			if !verifyCaptcha(userC.HCaptchaResponse) {
+				return c.String(http.StatusForbidden, "hCaptcha Error")
+			}
+		}
+	}
+	u := new(user)
+	t := db.Where("username = ?", userC.Username).First(u)
+	if t.RowsAffected > 0 {
+		return c.String(http.StatusAlreadyReported, "User exists")
+	}
+	db.Create(newUser(userC.Username, userC.Password, strings.Split(userC.Acls, "$")))
+	return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 }
 
 func verifySession(c echo.Context) error {
