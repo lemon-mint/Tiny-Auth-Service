@@ -148,10 +148,14 @@ func signin(c echo.Context) error {
 		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 	}
 	SecureCookie := false
+	HTTPOnlyCookie := false
+	db.Model(u).Update("LastSignin", time.Now())
 	if os.Getenv("TINY_AUTH_SERVICE_TLS") == "true" {
 		SecureCookie = true
 	}
-	db.Model(u).Update("LastSignin", time.Now())
+	if os.Getenv("TINY_AUTH_SERVICE_COOKIE_HTTPONLY") == "true" {
+		HTTPOnlyCookie = true
+	}
 	c.SetCookie(&http.Cookie{
 		Name: "_GOAUTHSSID",
 		Value: signer.SignAndEncrypt(encodeSession(session{
@@ -159,9 +163,10 @@ func signin(c echo.Context) error {
 			TimeStamp: time.Now().UTC().String(),
 			ACLS:      strings.Split(u.ACLS, "$"),
 		})),
-		HttpOnly: true,
+		HttpOnly: HTTPOnlyCookie,
 		Secure:   SecureCookie,
 		Expires:  time.Now().Add(24 * time.Hour),
+		Domain:   os.Getenv("TINY_AUTH_SERVICE_COOKIE_DOMAIN"),
 		Path:     "/",
 	})
 	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
