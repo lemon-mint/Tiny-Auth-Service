@@ -162,6 +162,7 @@ func signin(c echo.Context) error {
 		HttpOnly: true,
 		Secure:   SecureCookie,
 		Expires:  time.Now().Add(24 * time.Hour),
+		Path:     "/",
 	})
 	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
 }
