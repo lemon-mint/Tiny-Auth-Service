@@ -21,6 +21,10 @@ Multipurpose external authentication server made with Go
 
 `TINY_AUTH_SERVICE_CAPTCHA_TYPE`: (`recaptcha` or `hcaptcha`)
 
+`TINY_AUTH_SERVICE_INITDB_ADMIN_ID`
+
+`TINY_AUTH_SERVICE_INITDB_ADMIN_PASSWORD`
+
 # TODO 
 
 - [x] signin

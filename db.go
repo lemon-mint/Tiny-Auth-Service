@@ -31,4 +31,16 @@ func dbConnect() {
 	}
 	db, _ = gorm.Open(driver, &gorm.Config{})
 	db.AutoMigrate(&user{})
+	if os.Getenv("TINY_AUTH_SERVICE_INITDB_ADMIN_ID") != "" {
+		u := new(user)
+		t := db.Where("username = ?", os.Getenv("TINY_AUTH_SERVICE_INITDB_ADMIN_ID")).First(u)
+		if t.RowsAffected > 0 {
+			return
+		}
+		db.Create(newUser(
+			os.Getenv("TINY_AUTH_SERVICE_INITDB_ADMIN_ID"),
+			os.Getenv("TINY_AUTH_SERVICE_INITDB_ADMIN_PASSWORD"),
+			[]string{"admin", "user"},
+		))
+	}
 }
