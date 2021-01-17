@@ -56,7 +56,6 @@ func main() {
 	}
 	e.Renderer = t
 	dbConnect()
-	//db.Create(newUser("admin", "qwerty001", []string{"user"}))
 	e.GET("/authserver/signin", func(c echo.Context) error {
 		return c.Render(
 			http.StatusOK,
