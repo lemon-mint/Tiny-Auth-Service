@@ -24,7 +24,5 @@ Multipurpose external authentication server made with Go
 # TODO 
 
 - [x] signin
-- [ ] signup
-- [ ] admin console
-- [ ] admin console password reset
+- [x] signup
 - [ ] 2FA
