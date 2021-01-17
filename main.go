@@ -66,20 +66,44 @@ func main() {
 			},
 		)
 	})
-	e.GET("/authserver/signup", func(c echo.Context) error {
-		return c.Render(
-			http.StatusOK,
-			"signup.html",
-			map[string]interface{}{
-				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
-				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
-			},
-		)
-	})
+	e.GET("/authserver/signup", signupForm)
 	e.GET("/authserver/verify", verifySession)
 	e.POST("/authserver/auth.go", signin)
 	e.POST("/authserver/signup.go", signup)
 	e.Logger.Fatal(e.Start(":18080"))
+}
+
+func signupForm(c echo.Context) error {
+	m, err := c.Cookie("_GOAUTHSSID")
+	if err != nil {
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+	}
+	d, err := signer.DecryptAndVerify(m.Value)
+	if err != nil {
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+	}
+	s, err := decodeSession(d)
+	if err != nil {
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+	}
+	IsAdmin := false
+	for i := range s.ACLS {
+		if s.ACLS[i] == "admin" {
+			IsAdmin = true
+			break
+		}
+	}
+	if !IsAdmin {
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+	}
+	return c.Render(
+		http.StatusOK,
+		"signup.html",
+		map[string]interface{}{
+			"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
+			"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
+		},
+	)
 }
 
 func parseBase64(a string) []byte {
