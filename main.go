@@ -147,7 +147,10 @@ func signin(c echo.Context) error {
 	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
 		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
 	}
-	CurrentURL := c.Request().URL
+	SecureCookie := false
+	if os.Getenv("TINY_AUTH_SERVICE_TLS") == "true" {
+		SecureCookie = true
+	}
 	db.Model(u).Update("LastSignin", time.Now())
 	c.SetCookie(&http.Cookie{
 		Name: "_GOAUTHSSID",
@@ -157,7 +160,7 @@ func signin(c echo.Context) error {
 			ACLS:      strings.Split(u.ACLS, "$"),
 		})),
 		HttpOnly: true,
-		Secure:   CurrentURL.Scheme == "https",
+		Secure:   SecureCookie,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
