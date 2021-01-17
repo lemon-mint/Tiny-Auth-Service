@@ -156,6 +156,7 @@ func signin(c echo.Context) error {
 			ACLS:      strings.Split(u.ACLS, "$"),
 		})),
 		HttpOnly: true,
+		Secure:   c.IsTLS(),
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
