@@ -18,3 +18,4 @@
 users.db
 verify.go
 .auth.admin.token
+docker-compose.yml
