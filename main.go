@@ -241,7 +241,13 @@ func signinRedirect(c echo.Context) error {
 		Domain:   os.Getenv("TINY_AUTH_SERVICE_COOKIE_DOMAIN"),
 		Path:     "/",
 	})
-	return c.Redirect(http.StatusSeeOther, userC.Redirect)
+	return c.Render(
+		http.StatusOK,
+		"redirect.html",
+		map[string]interface{}{
+			"redirect": userC.Redirect,
+		},
+	)
 }
 
 func signup(c echo.Context) error {

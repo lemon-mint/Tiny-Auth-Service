@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.0.5/dist/vue.global.prod.js"></script>
+    <title>Redirect</title>
+</head>
+
+<body class="w3-teal">
+    <div class="w3-container w3-teal">
+        <h1>Redirect</h1>
+    </div>
+    <div class="w3-padding-24 w3-margin-top w3-round-medium">
+        <div class="w3-container w3-card w3-display-middle w3-padding-48 w3-blue-grey w3-round-medium w3-margin-bottom">
+            <div id="vue-counter">
+                <h3>You will be redirected in [%^] count [^%] seconds</h3>
+            </div>
+            <input type="url" name="redirect" id="redirect" value="{{.redirect}}" hidden>
+        </div>
+    </div>
+    <script>
+        const redirect_count = {
+            data() {
+                return {
+                    count: 3
+                }
+            },
+            mounted() {
+                let counter = setInterval(() => {
+                    this.count -= 1
+                    if (this.count <= 0) {
+                        window.location.replace(document.getElementById("redirect").value);
+                        clearInterval(counter);
+                    }
+                }, 1000);
+            },
+            delimiters: ['[%^]', '[^%]']
+        };
+        Vue.createApp(redirect_count).mount('#vue-counter');
+    </script>
+</body>
+
+</html>
