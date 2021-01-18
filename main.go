@@ -63,12 +63,24 @@ func main() {
 			map[string]interface{}{
 				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
 				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
+				"redirect":    c.Request().URL.Query().Get("callback"),
+			},
+		)
+	})
+	e.GET("/authserver/redirect/signin", func(c echo.Context) error {
+		return c.Render(
+			http.StatusOK,
+			"signinredirect.html",
+			map[string]interface{}{
+				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
+				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
 			},
 		)
 	})
 	e.GET("/authserver/signup", signupForm)
 	e.GET("/authserver/verify", verifySession)
 	e.POST("/authserver/auth.go", signin)
+	e.POST("/authserver/redirect/auth.go", signinRedirect)
 	e.POST("/authserver/signup.go", signup)
 	e.Logger.Fatal(e.Start(":18080"))
 }
@@ -170,6 +182,65 @@ func signin(c echo.Context) error {
 		Path:     "/",
 	})
 	return c.Redirect(http.StatusSeeOther, "/authserver/verify")
+}
+
+func signinRedirect(c echo.Context) error {
+	userC := new(struct {
+		Username          string `form:"username" json:"username"`
+		Password          string `form:"password" json:"password"`
+		Redirect          string `form:"redirect" json:"redirect"`
+		RecaptchaResponse string `form:"g-recaptcha-response" json:"g-recaptcha-response"`
+		HCaptchaResponse  string `form:"h-captcha-response" json:"h-captcha-response"`
+	})
+	err := c.Bind(userC)
+	if err != nil {
+		return c.String(http.StatusForbidden, "Username or password do not match.")
+	}
+	if os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_ENABLE") == "true" {
+		CaptchaType := os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE")
+		if CaptchaType == "recaptcha" {
+			if !verifyCaptcha(userC.RecaptchaResponse) {
+				return c.String(http.StatusForbidden, "Recaptcha Error")
+			}
+		} else if CaptchaType == "hcaptcha" {
+			if !verifyCaptcha(userC.HCaptchaResponse) {
+				return c.String(http.StatusForbidden, "hCaptcha Error")
+			}
+		}
+	}
+	u := new(user)
+	t := db.First(u, "username = ?", userC.Username)
+	if t.Error != nil {
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+	}
+	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
+	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 2, 1024, 4, 32)
+	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
+		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+	}
+	SecureCookie := false
+	HTTPOnlyCookie := false
+	db.Model(u).Update("LastSignin", time.Now())
+	if os.Getenv("TINY_AUTH_SERVICE_TLS") == "true" {
+		SecureCookie = true
+	}
+	if os.Getenv("TINY_AUTH_SERVICE_COOKIE_HTTPONLY") == "true" {
+		HTTPOnlyCookie = true
+	}
+	c.SetCookie(&http.Cookie{
+		Name: "_GOAUTHSSID",
+		Value: signer.SignAndEncrypt(encodeSession(session{
+			SessionID: getCRand(),
+			TimeStamp: time.Now().UTC().String(),
+			ACLS:      strings.Split(u.ACLS, "$"),
+		})),
+		HttpOnly: HTTPOnlyCookie,
+		Secure:   SecureCookie,
+		Expires:  time.Now().Add(24 * time.Hour),
+		Domain:   os.Getenv("TINY_AUTH_SERVICE_COOKIE_DOMAIN"),
+		Path:     "/",
+	})
+	return c.Redirect(http.StatusSeeOther, userC.Redirect)
 }
 
 func signup(c echo.Context) error {
