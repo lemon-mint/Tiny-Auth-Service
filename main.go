@@ -79,6 +79,7 @@ func main() {
 	})
 	e.GET("/authserver/signup", signupForm)
 	e.GET("/authserver/verify", verifySession)
+	e.GET("/authserver/verify/:acl", verifySessionACL)
 	e.POST("/authserver/auth.go", signin)
 	e.POST("/authserver/redirect/auth.go", signinRedirect)
 	e.POST("/authserver/signup.go", signup)
@@ -347,5 +348,66 @@ func verifySession(c echo.Context) error {
 		Msg:       "Verification was successful",
 		SessionID: s.SessionID,
 		ACLS:      s.ACLS,
+	})
+}
+
+func verifySessionACL(c echo.Context) error {
+	type response struct {
+		Success   bool     `json:"success"`
+		Msg       string   `json:"msg"`
+		SessionID string   `json:"id"`
+		ACLS      []string `json:"acls"`
+	}
+	m, err := c.Cookie("_GOAUTHSSID")
+	if err != nil {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "Unauthenticated User",
+		})
+	}
+	d, err := signer.DecryptAndVerify(m.Value)
+	if err != nil {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "Expired Session",
+		})
+	}
+	s, err := decodeSession(d)
+	if err != nil {
+		return c.JSON(http.StatusForbidden, response{
+			Success: false,
+			Msg:     "Expired Session",
+		})
+	}
+	IsAdmin := false
+	RequiredACL := c.Param("acl")
+	ACLFound := false
+	for i := range s.ACLS {
+		if s.ACLS[i] == "admin" {
+			IsAdmin = true
+			break
+		} else if s.ACLS[i] == RequiredACL {
+			ACLFound = true
+		}
+	}
+	if IsAdmin {
+		return c.JSON(http.StatusOK, response{
+			Success:   true,
+			Msg:       "Verification was successful",
+			SessionID: s.SessionID,
+			ACLS:      s.ACLS,
+		})
+	}
+	if ACLFound {
+		return c.JSON(http.StatusOK, response{
+			Success:   true,
+			Msg:       "Verification was successful",
+			SessionID: s.SessionID,
+			ACLS:      s.ACLS,
+		})
+	}
+	return c.JSON(http.StatusForbidden, response{
+		Success: false,
+		Msg:     "Access denied",
 	})
 }
