@@ -63,7 +63,6 @@ func main() {
 			map[string]interface{}{
 				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
 				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
-				"redirect":    c.Request().URL.Query().Get("callback"),
 			},
 		)
 	})
@@ -74,6 +73,7 @@ func main() {
 			map[string]interface{}{
 				"captchaType": os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE"),
 				"sitekey":     os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_SITEKEY"),
+				"redirect":    c.Request().URL.Query().Get("callback"),
 			},
 		)
 	})
