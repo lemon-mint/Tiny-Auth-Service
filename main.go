@@ -200,23 +200,23 @@ func signinRedirect(c echo.Context) error {
 		CaptchaType := os.Getenv("TINY_AUTH_SERVICE_CAPTCHA_TYPE")
 		if CaptchaType == "recaptcha" {
 			if !verifyCaptcha(userC.RecaptchaResponse) {
-				return c.String(http.StatusForbidden, "Recaptcha Error")
+				return c.Redirect(http.StatusSeeOther, "/authserver/redirect/signin?callback="+userC.Redirect)
 			}
 		} else if CaptchaType == "hcaptcha" {
 			if !verifyCaptcha(userC.HCaptchaResponse) {
-				return c.String(http.StatusForbidden, "hCaptcha Error")
+				return c.Redirect(http.StatusSeeOther, "/authserver/redirect/signin?callback="+userC.Redirect)
 			}
 		}
 	}
 	u := new(user)
 	t := db.First(u, "username = ?", userC.Username)
 	if t.Error != nil {
-		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+		return c.Redirect(http.StatusSeeOther, "/authserver/redirect/signin?callback="+userC.Redirect)
 	}
 	xpass := sha512.Sum512([]byte(userC.Password + userC.Username))
 	hash := argon2.IDKey(xpass[:], parseBase64(u.Salt), 2, 1024, 4, 32)
 	if !bytes.Equal(hash, parseBase64(u.PassHash)) {
-		return c.Redirect(http.StatusSeeOther, "/authserver/signin")
+		return c.Redirect(http.StatusSeeOther, "/authserver/redirect/signin?callback="+userC.Redirect)
 	}
 	SecureCookie := false
 	HTTPOnlyCookie := false
