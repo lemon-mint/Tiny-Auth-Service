@@ -11,15 +11,16 @@ import (
 
 type user struct {
 	gorm.Model
-	Username      string `gorm:"primaryKey" gorm:"index"`
-	PassHash      string
-	Salt          string
-	LastSignin    time.Time
-	Created       int64 `gorm:"autoCreateTime"`
-	ACLS          string
-	NeedTwoFactor bool
-	TwoFactorType string
-	TwoFactorKey  string
+	Username         string `gorm:"primaryKey" gorm:"index"`
+	PassHash         string
+	Salt             string
+	LastSignin       time.Time
+	Created          int64 `gorm:"autoCreateTime"`
+	ACLS             string
+	NeedTwoFactor    bool
+	TwoFactorType    string
+	TwoFactorKey     string
+	TwoFactorCounter string
 }
 
 var db *gorm.DB
