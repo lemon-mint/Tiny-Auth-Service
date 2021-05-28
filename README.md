@@ -1,4 +1,6 @@
 # Tiny-Auth-Service
+[![](https://goreportcard.com/badge/github.com/lemon-mint/Tiny-Auth-Service)](https://goreportcard.com/report/github.com/lemon-mint/Tiny-Auth-Service)
+
 Multipurpose external authentication server made with Go
 
 
